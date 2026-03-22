@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyA0n86bW4EApM5_e4t5wLt2tdb48jOyu2g</string>
+	<key>GCM_SENDER_ID</key>
+	<string>697751596289</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.tharika.citizenapp</string>
+	<key>PROJECT_ID</key>
+	<string>complaint-management-sys-f5d5e</string>
+	<key>STORAGE_BUCKET</key>
+	<string>complaint-management-sys-f5d5e.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:697751596289:ios:16f1a4c03e0c6b037a7f00</string>
+</dict>
+</plist>
