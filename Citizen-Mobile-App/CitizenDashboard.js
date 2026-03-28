@@ -55,7 +55,7 @@ export default function CitizenDashboard({ citizen, onLogout }) {
     }
 
     if (activeTab === 'activities') {
-      return <Activities />;
+      return <Activities citizen={citizen} />;
     }
 
     if (activeTab === 'notifications') {
