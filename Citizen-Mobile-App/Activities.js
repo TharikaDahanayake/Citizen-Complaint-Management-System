@@ -178,6 +178,7 @@ export default function Activities({ citizen }) {
               ? data.evidenceUrls.filter((url) => typeof url === 'string' && url.trim())
               : [],
             status: data.status || data.complaintStatus || 'Pending',
+            comment: data.comment || '',
             stationID: complaintStationId || 'N/A',
             stationName: data.stationName || 'N/A',
             department: data.department || 'N/A',
@@ -305,9 +306,11 @@ export default function Activities({ citizen }) {
                       )}
 
                       <Text style={styles.sectionTitleText}>Assignment</Text>
-                      <DetailRow label="Status" value={complaint.status} />
                       <DetailRow label="Station Name" value={complaint.stationName} />
                       <DetailRow label="Department" value={complaint.department} />
+                      {activeTab === 'Resolved' ? (
+                        <DetailRow label="Solution" value={complaint.comment || 'N/A'} />
+                      ) : null}
                       {activeTab === 'Ongoing' ? (
                         <DetailRow label="Officer Name" value={complaint.officerName} />
                       ) : null}

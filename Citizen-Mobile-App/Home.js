@@ -85,7 +85,7 @@ export default function Home({ citizen, onNewComplaintPress }) {
             return;
           }
 
-          if (rawStatus.includes('review')) {
+          if (rawStatus.includes('ongoing')) {
             nextCounts.inReview += 1;
             return;
           }
