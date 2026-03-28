@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from './firebaseConfig';
+import { generateAnonOwnerHash } from './anonTracking';
 
 const QUICK_ACTIONS = [
   { key: 'new-complaint', label: 'New Complaint', icon: 'document-text-outline' },
@@ -39,13 +40,15 @@ export default function Home({ citizen, onNewComplaintPress }) {
       }
 
       try {
+        const anonOwnerHash = await generateAnonOwnerHash(citizenId);
+
         const nonAnonymousComplaintsQuery = query(
           collection(db, 'complaints'),
           where('citizenID', '==', citizenId)
         );
         const anonymousComplaintsQuery = query(
           collection(db, 'complaints'),
-          where('submittedByCitizenID', '==', citizenId)
+          where('anonOwnerHash', '==', anonOwnerHash)
         );
 
         const [nonAnonymousSnapshot, anonymousSnapshot] = await Promise.all([
@@ -54,21 +57,24 @@ export default function Home({ citizen, onNewComplaintPress }) {
         ]);
 
         const complaintMap = new Map();
-        nonAnonymousSnapshot.forEach((documentSnapshot) => {
-          complaintMap.set(documentSnapshot.id, documentSnapshot.data());
+        nonAnonymousSnapshot.docs.forEach((documentSnapshot) => {
+          complaintMap.set(documentSnapshot.id, documentSnapshot);
         });
-        anonymousSnapshot.forEach((documentSnapshot) => {
-          complaintMap.set(documentSnapshot.id, documentSnapshot.data());
+        anonymousSnapshot.docs.forEach((documentSnapshot) => {
+          complaintMap.set(documentSnapshot.id, documentSnapshot);
         });
 
+        const complaintDocuments = Array.from(complaintMap.values());
+
         const nextCounts = {
-          total: complaintMap.size,
+          total: complaintDocuments.length,
           pending: 0,
           inReview: 0,
           resolved: 0,
         };
 
-        complaintMap.forEach((data) => {
+        complaintDocuments.forEach((documentSnapshot) => {
+          const data = documentSnapshot.data();
           const rawStatus = (data?.status || data?.complaintStatus || 'pending')
             .toString()
             .trim()
@@ -81,6 +87,11 @@ export default function Home({ citizen, onNewComplaintPress }) {
 
           if (rawStatus.includes('review')) {
             nextCounts.inReview += 1;
+            return;
+          }
+
+          if (rawStatus.includes('pending')) {
+            nextCounts.pending += 1;
             return;
           }
 

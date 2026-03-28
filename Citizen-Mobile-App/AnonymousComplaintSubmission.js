@@ -6,7 +6,12 @@ import MapView, { Marker } from 'react-native-maps';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebaseConfig';
+import { auth, db } from './firebaseConfig';
+import { generateAnonOwnerHash } from './anonTracking';
+import { categorizeComplaint } from './complaintCategorizationService';
+import { stationsService } from './stationsService';
+import { stationDepartmentService } from './stationDepartmentService';
+import { locationRoutingService } from './locationRoutingService';
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 const CLOUDINARY_CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -19,7 +24,7 @@ const formatDateForInput = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-export default function AnonymousComplaintSubmission({ citizen, onBack }) {
+export default function AnonymousComplaintSubmission({ onBack }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [incidentDate, setIncidentDate] = useState(() => formatDateForInput(new Date()));
@@ -248,8 +253,48 @@ export default function AnonymousComplaintSubmission({ citizen, onBack }) {
     setSubmitting(true);
     try {
       const evidenceUrls = await uploadEvidenceFiles();
+      const identity = auth.currentUser?.uid;
+      const anonOwnerHash = await generateAnonOwnerHash(identity);
+      const aiCategorization = await categorizeComplaint(description.trim());
 
-      await addDoc(collection(db, 'complaints'), {
+      // 🔹 Station Routing: Get nearest police station by location
+      const allStations = await stationsService.getAllStations(true);
+      const nearestStation = locationRoutingService.findNearestStation(
+        allStations,
+        latitude,
+        longitude
+      );
+      const stationRoutingInfo = locationRoutingService.buildStationRoutingInfo(nearestStation);
+
+      // 🔹 Department Routing: Get correct department ID from database
+      let departmentRoutingInfo = {
+        departmentID: aiCategorization.departmentID || null,
+        department: aiCategorization.department || 'Unknown',
+      };
+
+      if (nearestStation && nearestStation.stationID) {
+        try {
+          const deptInfo = await stationDepartmentService.getDepartmentRoutingForComplaint(
+            aiCategorization.complaintCategory,
+            nearestStation.stationID
+          );
+          departmentRoutingInfo = {
+            departmentID: deptInfo.departmentID || null,
+            department: deptInfo.department || 'Unknown',
+            departmentRoutingSource: deptInfo.departmentRoutingSource || 'unknown',
+          };
+        } catch (error) {
+          console.warn('Failed to get department from database, using AI categorization:', error);
+          departmentRoutingInfo = {
+            departmentID: aiCategorization.departmentID || null,
+            department: aiCategorization.department || 'Unknown',
+            departmentRoutingSource: 'ai-categorization-fallback',
+          };
+        }
+      }
+
+      // Build complaint document with safe field extraction
+      const complaintDoc = {
         title: title.trim(),
         description: description.trim(),
         incidentDate: incidentDate.trim(),
@@ -259,9 +304,34 @@ export default function AnonymousComplaintSubmission({ citizen, onBack }) {
         evidenceUrls,
         isAnonymous: true,
         complaintType: 'anonymous',
-        submittedByCitizenID: citizen?.citizenUid || citizen?.citizenID || null,
+        anonOwnerHash,
+        complaintCategory: aiCategorization.complaintCategory || 'Unknown',
+        aiConfidence: aiCategorization.aiConfidence || 0,
+        aiSource: aiCategorization.aiSource || 'unknown',
+        aiReviewRequired: aiCategorization.aiReviewRequired || false,
+        aiThreshold: aiCategorization.aiThreshold || 0,
+        aiModelVersion: aiCategorization.aiModelVersion || null,
+        // Station routing info
+        stationID: stationRoutingInfo.stationID || null,
+        stationName: stationRoutingInfo.stationName || null,
+        stationContact: stationRoutingInfo.stationContact || null,
+        stationEmail: stationRoutingInfo.stationEmail || null,
+        stationProvince: stationRoutingInfo.stationProvince || null,
+        stationDistrict: stationRoutingInfo.stationDistrict || null,
+        stationDivision: stationRoutingInfo.stationDivision || null,
+        distanceToNearestStationKm: stationRoutingInfo.distanceToNearestStationKm || null,
+        // Department info (these MUST NOT be undefined)
+        departmentID: departmentRoutingInfo.departmentID || 'unknown',
+        department: departmentRoutingInfo.department || 'Unknown',
+        departmentRoutingSource: departmentRoutingInfo.departmentRoutingSource || 'unknown',
+        status: 'Pending',
+        officerID: null,
+        comment: null,
         createdAt: serverTimestamp(),
-      });
+        updatedAt: serverTimestamp(),
+      };
+
+      await addDoc(collection(db, 'complaints'), complaintDoc);
 
       Alert.alert('Success', 'Anonymous complaint submitted successfully.');
       setTitle('');

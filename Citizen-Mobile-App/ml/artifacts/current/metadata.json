@@ -1,0 +1,156 @@
+{
+  "createdAtUtc": "2026-03-27T08:37:26.402650+00:00",
+  "inputColumn": "complaint",
+  "targetColumn": "category",
+  "modelType": "tfidf_logistic_regression",
+  "modelVersion": "complaint-model-20260327-083726",
+  "randomSeed": 42,
+  "threshold": {
+    "selected": 0.4,
+    "selectionScore": 1.0,
+    "expectedCoverage": 1.0
+  },
+  "data": {
+    "path": "data\\complaints_dataset.xlsx",
+    "totalRows": 500,
+    "split": {
+      "train": 350,
+      "validation": 75,
+      "test": 75
+    },
+    "labelDistribution": {
+      "Neighbor / Community Issues": 175,
+      "traffic issues": 166,
+      "Public Nuisance / Cleanliness": 159
+    }
+  },
+  "labels": [
+    "Neighbor / Community Issues",
+    "Public Nuisance / Cleanliness",
+    "traffic issues"
+  ],
+  "categoryToDepartment": {
+    "traffic issues": {
+      "department_id": "traffic-division",
+      "department_name": "Traffic Division"
+    },
+    "Public Nuisance / Cleanliness": {
+      "department_id": "minor-offences-branch",
+      "department_name": "Minor Offences Branch"
+    },
+    "Neighbor / Community Issues": {
+      "department_id": "community-policing-unit",
+      "department_name": "Community Policing Unit"
+    }
+  },
+  "metrics": {
+    "validation": {
+      "macroF1": 1.0,
+      "accuracy": 1.0,
+      "report": {
+        "Neighbor / Community Issues": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 26.0
+        },
+        "Public Nuisance / Cleanliness": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 24.0
+        },
+        "traffic issues": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 25.0
+        },
+        "accuracy": 1.0,
+        "macro avg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 75.0
+        },
+        "weighted avg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 75.0
+        }
+      },
+      "confusionMatrix": [
+        [
+          26,
+          0,
+          0
+        ],
+        [
+          0,
+          24,
+          0
+        ],
+        [
+          0,
+          0,
+          25
+        ]
+      ]
+    },
+    "test": {
+      "macroF1": 1.0,
+      "accuracy": 1.0,
+      "report": {
+        "Neighbor / Community Issues": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 26.0
+        },
+        "Public Nuisance / Cleanliness": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 24.0
+        },
+        "traffic issues": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 25.0
+        },
+        "accuracy": 1.0,
+        "macro avg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 75.0
+        },
+        "weighted avg": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 75.0
+        }
+      },
+      "confusionMatrix": [
+        [
+          26,
+          0,
+          0
+        ],
+        [
+          0,
+          24,
+          0
+        ],
+        [
+          0,
+          0,
+          25
+        ]
+      ]
+    }
+  }
+}
