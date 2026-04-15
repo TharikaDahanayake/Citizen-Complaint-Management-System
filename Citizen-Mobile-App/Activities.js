@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
   },
   activeTabButton: {
-    backgroundColor: '#737000',
+    backgroundColor: '#1E3A8A',
   },
   tabText: {
     fontSize: 13,
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   detailsButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#737000',
+    backgroundColor: '#1E3A8A',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,

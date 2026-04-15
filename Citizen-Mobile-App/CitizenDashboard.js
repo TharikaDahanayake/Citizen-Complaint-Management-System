@@ -98,7 +98,7 @@ export default function CitizenDashboard({ citizen, onLogout }) {
               <Ionicons
                 name={selected ? tab.icon : `${tab.icon}-outline`}
                 size={22}
-                color={selected ? '#737000' : '#94a3b8'}
+                color={selected ? '#1E3A8A' : '#94a3b8'}
               />
               <Text style={[styles.tabLabel, selected && styles.tabLabelActive]}>{tab.label}</Text>
             </TouchableOpacity>
@@ -115,9 +115,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
   },
   topTab: {
-    backgroundColor: '#737000',
+    backgroundColor: '#1E3A8A',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 25,
   },
   topTabText: {
     color: '#ffffff',
@@ -147,6 +147,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   tabLabelActive: {
-    color: '#737000',
+    color: '#1E3A8A',
   },
 });

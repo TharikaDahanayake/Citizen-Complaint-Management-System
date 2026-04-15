@@ -1,8 +1,13 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function Profile({ citizen, onLogout }) {
   return (
     <View style={styles.page}>
+
+      <View style={styles.profileHero}>
+        <Image source={require('./assets/Profile.png')} style={styles.profileImage} resizeMode="contain" />
+      </View>
+
       <Text style={styles.heading}>Profile</Text>
 
       <View style={styles.card}>
@@ -34,6 +39,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+  profileHero: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+   
+    
+  },
+  profileImage: {
+    width: 180,
+    height: 180,
+  },
   heading: {
     fontSize: 24,
     fontWeight: '700',
@@ -64,7 +80,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     height: 48,
     borderRadius: 10,
-    backgroundColor: '#737000',
+    backgroundColor: '#1E3A8A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -73,4 +89,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  
 });

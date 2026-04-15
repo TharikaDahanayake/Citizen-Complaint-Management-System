@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -324,11 +325,11 @@ export default function App() {
   if (isBooting) {
     return (
       <SafeAreaView style={styles.bootScreen}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <View style={styles.bootContent}>
-          <Text style={styles.bootTitle}>Citizen Connect</Text>
-          <Text style={styles.bootSubtitle}>Booting secure registration...</Text>
-          <ActivityIndicator size="large" color="#ffffff" style={styles.bootLoader} />
+          <Image source={require('./assets/Logo.png')} style={styles.bootLogo} resizeMode="contain" />
+          <Text style={styles.bootSubtitle}>Your Safety Starts Here!</Text>
+          <ActivityIndicator size="large" color="#1E3A8A" style={styles.bootLoader} />
         </View>
       </SafeAreaView>
     );
@@ -450,7 +451,7 @@ export default function App() {
 const styles = StyleSheet.create({
   bootScreen: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -458,16 +459,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  bootTitle: {
-    fontSize: 34,
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: 0.6,
+  bootLogo: {
+    width: 250,
+    height: 250,
   },
   bootSubtitle: {
-    marginTop: 10,
+    marginTop: 15,
     fontSize: 16,
-    color: '#cbd5e1',
+    color: '#475569',
   },
   bootLoader: {
     marginTop: 24,
@@ -507,7 +506,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     height: 48,
     borderRadius: 10,
-    backgroundColor: '#737000',
+    backgroundColor: '#1E3A8A',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -524,7 +523,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   switchLink: {
-    color: '#737000',
+    color: '#1E3A8A',
     fontSize: 14,
     fontWeight: '600',
   },

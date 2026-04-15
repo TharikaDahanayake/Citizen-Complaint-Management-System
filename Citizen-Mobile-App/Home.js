@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from './firebaseConfig';
@@ -16,21 +16,40 @@ const INITIAL_SUMMARY_COUNTS = {
   resolved: 0,
 };
 
-const RECENT_ACTIVITIES = [
-  'Complaint #CMP-102 moved to In Review',
-  'Complaint #CMP-098 marked as Resolved',
-  'Complaint #CMP-110 submitted successfully',
-  'Complaint #CMP-096 received response from station',
-  'Complaint #CMP-087 moved to Pending Verification',
+const ADVERTISEMENTS = [
+  require('./assets/advertisement1.png'),
+  require('./assets/advertisement2.png'),
 ];
 
 export default function Home({ citizen, onNewComplaintPress }) {
   const [summaryCounts, setSummaryCounts] = useState(INITIAL_SUMMARY_COUNTS);
+  const [activeAdIndex, setActiveAdIndex] = useState(0);
+  const adScrollRef = useRef(null);
+  const adSlideWidth = useMemo(() => Dimensions.get('window').width - 40, []);
   const now = useMemo(() => new Date(), []);
   const citizenId = useMemo(
     () => citizen?.citizenUid || citizen?.citizenID || '',
     [citizen]
   );
+
+  useEffect(() => {
+    if (ADVERTISEMENTS.length < 2) {
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      setActiveAdIndex((currentIndex) => {
+        const nextIndex = (currentIndex + 1) % ADVERTISEMENTS.length;
+        adScrollRef.current?.scrollTo({
+          x: nextIndex * adSlideWidth,
+          animated: true,
+        });
+        return nextIndex;
+      });
+    }, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [adSlideWidth]);
 
   useEffect(() => {
     const loadComplaintSummary = async () => {
@@ -145,7 +164,6 @@ export default function Home({ citizen, onNewComplaintPress }) {
   return (
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
       <View style={styles.section}>
-        <Text style={styles.heading}>Hello, {citizen?.citizenName || 'Citizen'}</Text>
         <Text style={styles.metaText}>Today: {formattedDateTime}</Text>
         <Text style={styles.metaText}>Last login: {lastLoginNote}</Text>
       </View>
@@ -160,8 +178,11 @@ export default function Home({ citizen, onNewComplaintPress }) {
               activeOpacity={0.8}
             >
               <View style={styles.quickActionContent}>
-                
-                <Ionicons name={action.icon} size={34} color="#737000" />
+                {action.key === 'new-complaint' ? (
+                  <Image source={require('./assets/new-complaint.png')} style={styles.quickActionImage} resizeMode="contain" />
+                ) : (
+                  <Ionicons name={action.icon} size={34} color="#1E3A8A" />
+                )}
                 <Text style={styles.quickActionText}>{action.label}</Text>
               </View>
             </TouchableOpacity>
@@ -182,13 +203,35 @@ export default function Home({ citizen, onNewComplaintPress }) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
-        <View style={styles.activityCard}>
-          {RECENT_ACTIVITIES.map((item, index) => (
-            <Text key={item} style={styles.activityText}>
-              {index + 1}. {item}
-            </Text>
-          ))}
+        <Text style={styles.sectionTitle}>Advertisements</Text>
+        <View style={styles.adCard}>
+          <ScrollView
+            ref={adScrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              const nextIndex = Math.round(event.nativeEvent.contentOffset.x / adSlideWidth);
+              setActiveAdIndex(nextIndex);
+            }}
+          >
+            {ADVERTISEMENTS.map((imageSource, index) => (
+              <View key={`ad-${index}`} style={[styles.adSlide, { width: adSlideWidth }]}> 
+                <Image source={imageSource} style={styles.adImage} resizeMode="cover" />
+              </View>
+            ))}
+          </ScrollView>
+          <View style={styles.adDotsRow}>
+            {ADVERTISEMENTS.map((_, index) => (
+              <View
+                key={`dot-${index}`}
+                style={[
+                  styles.adDot,
+                  index === activeAdIndex ? styles.adDotActive : null,
+                ]}
+              />
+            ))}
+          </View>
         </View>
       </View>
     </ScrollView>
@@ -199,12 +242,6 @@ const styles = StyleSheet.create({
   page: {
     padding: 20,
     paddingBottom: 28,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 6,
   },
   section: {
     marginBottom: 18,
@@ -249,6 +286,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#334155',
   },
+  quickActionImage: {
+    width: 50,
+    height: 50,
+  },
   statusGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -270,7 +311,7 @@ const styles = StyleSheet.create({
   },
   statusValue: {
     fontSize: 26,
-    color: '#737000',
+    color: '#1E3A8A',
     fontWeight: '800',
     marginBottom: 4,
   },
@@ -281,17 +322,36 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 8,
   },
-  activityCard: {
+  adCard: {
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#cbd5e1',
     borderRadius: 12,
-    padding: 14,
+    overflow: 'hidden',
   },
-  activityText: {
-    fontSize: 14,
-    color: '#1e293b',
-    marginBottom: 8,
-    lineHeight: 20,
+  adSlide: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adImage: {
+    width: '100%',
+    height: 180,
+  },
+  adDotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+  },
+  adDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#cbd5e1',
+  },
+  adDotActive: {
+    width: 20,
+    backgroundColor: '#1E3A8A',
   },
 });

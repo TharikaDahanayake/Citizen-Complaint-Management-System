@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   button: {
     height: 54,
     borderRadius: 10,
-    backgroundColor: '#737000',
+    backgroundColor: '#1E3A8A',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButtonText: {
-    color: '#737000',
+    color: '#1E3A8A',
     fontSize: 14,
     fontWeight: '600',
   },
