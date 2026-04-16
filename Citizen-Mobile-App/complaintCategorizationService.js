@@ -1,4 +1,5 @@
 const DEFAULT_PREDICTION_URL = 'http://10.0.2.2:8000/predict';
+const PREDICTION_TIMEOUT_MS = 4000;
 
 const CATEGORY_TRAFFIC = 'traffic issues';
 const CATEGORY_NUISANCE = 'Public Nuisance / Cleanliness';
@@ -71,13 +72,21 @@ export const categorizeComplaint = async (description) => {
   const predictionUrl = process.env.EXPO_PUBLIC_COMPLAINT_AI_API_URL || DEFAULT_PREDICTION_URL;
 
   try {
-    const response = await fetch(predictionUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ description: trimmed }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), PREDICTION_TIMEOUT_MS);
+    let response;
+    try {
+      response = await fetch(predictionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description: trimmed }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const bodyText = await response.text();

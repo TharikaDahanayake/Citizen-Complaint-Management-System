@@ -6,6 +6,23 @@ import { db } from './firebaseConfig';
 
 const normalizeStatus = (value) => (value || '').toString().trim().toLowerCase();
 
+const formatTrackID = (value) => {
+  if (value === null || value === undefined) {
+    return 'Not Assigned';
+  }
+
+  const normalized = value.toString().trim();
+  if (!normalized) {
+    return 'Not Assigned';
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    return normalized.padStart(8, '0').slice(-8);
+  }
+
+  return normalized;
+};
+
 const statusMatchesTab = (statusValue, tabLabel) => {
   const status = normalizeStatus(statusValue);
 
@@ -169,6 +186,7 @@ export default function Activities({ citizen }) {
 
           return {
             id: documentSnapshot.id,
+            trackID: formatTrackID(data.trackID),
             title: data.title || 'Untitled Complaint',
             description: data.description || 'No description provided.',
             complaintCategory: data.complaintCategory || data.category || 'Unknown',
@@ -265,6 +283,9 @@ export default function Activities({ citizen }) {
               return (
                 <View key={complaint.id} style={styles.complaintBox}>
                   <Text style={styles.complaintTitle}>{complaint.title}</Text>
+                  <View style={styles.trackIdBadge}>
+                    <Text style={styles.trackIdBadgeText}>Track ID: {complaint.trackID}</Text>
+                  </View>
                   <View style={styles.badgeRow}>
                     <View style={styles.primaryBadge}>
                       <Text style={styles.primaryBadgeText}>Status: {complaint.status}</Text>
@@ -396,8 +417,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 6,
+    marginBottom: 4,
   },
+  trackIdBadge: {
+    alignSelf: 'flex-start',
+    /*backgroundColor: '#ecfeff',
+    borderWidth: 1,
+    borderColor: '#67e8f9',*/
+    borderRadius: 999,
+    paddingHorizontal: 0,
+    paddingVertical: 5,
+    marginBottom: 10,
+  },
+  trackIdBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    /*color: '#155e75',*/
+  },
+ 
   badgeRow: {
     flexDirection: 'row',
     gap: 8,

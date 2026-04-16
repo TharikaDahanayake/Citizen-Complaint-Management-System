@@ -11,6 +11,7 @@ import { categorizeComplaint } from './complaintCategorizationService';
 import { stationsService } from './stationsService';
 import { stationDepartmentService } from './stationDepartmentService';
 import { locationRoutingService } from './locationRoutingService';
+import { generateTrackID } from './trackIDService';
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 const CLOUDINARY_CLOUD_NAME = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -309,11 +310,13 @@ export default function NonAnonymousComplaintSubmission({ citizen, onBack }) {
     setSubmitting(true);
 
     try {
-      const evidenceUrls = await uploadEvidenceFiles();
-      const aiCategorization = await categorizeComplaint(description.trim());
+      const [evidenceUrls, aiCategorization, allStations] = await Promise.all([
+        uploadEvidenceFiles(),
+        categorizeComplaint(description.trim()),
+        stationsService.getAllStations(true),
+      ]);
 
       // 🔹 Station Routing: Get nearest police station by location
-      const allStations = await stationsService.getAllStations(true);
       const nearestStation = locationRoutingService.findNearestStation(
         allStations,
         latitude,
@@ -349,7 +352,9 @@ export default function NonAnonymousComplaintSubmission({ citizen, onBack }) {
       }
 
       // Build complaint document with safe field extraction
+      const trackID = await generateTrackID();
       const complaintDoc = {
+        trackID,
         title: title.trim(),
         description: description.trim(),
         incidentDate: incidentDate.trim(),
