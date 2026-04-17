@@ -1,9 +1,9 @@
 {
-  "createdAtUtc": "2026-03-27T08:37:26.402650+00:00",
+  "createdAtUtc": "2026-04-16T12:10:03.810413+00:00",
   "inputColumn": "complaint",
   "targetColumn": "category",
   "modelType": "tfidf_logistic_regression",
-  "modelVersion": "complaint-model-20260327-083726",
+  "modelVersion": "complaint-model-20260416-121003",
   "randomSeed": 42,
   "threshold": {
     "selected": 0.4,
@@ -11,17 +11,24 @@
     "expectedCoverage": 1.0
   },
   "data": {
-    "path": "data\\complaints_dataset.xlsx",
-    "totalRows": 500,
+    "path": "data\\new_complaints_dataset.xlsx",
+    "cleaning": {
+      "sourceSheet": "complaints_500",
+      "originalRows": 500,
+      "nonEmptyRows": 500,
+      "deduplicatedRows": 19,
+      "rowsAfterCleaning": 481
+    },
+    "totalRows": 481,
     "split": {
-      "train": 350,
-      "validation": 75,
-      "test": 75
+      "train": 336,
+      "validation": 72,
+      "test": 73
     },
     "labelDistribution": {
-      "Neighbor / Community Issues": 175,
-      "traffic issues": 166,
-      "Public Nuisance / Cleanliness": 159
+      "Neighbor / Community Issues": 171,
+      "Public Nuisance / Cleanliness": 156,
+      "traffic issues": 154
     }
   },
   "labels": [
@@ -58,26 +65,26 @@
           "precision": 1.0,
           "recall": 1.0,
           "f1-score": 1.0,
-          "support": 24.0
+          "support": 23.0
         },
         "traffic issues": {
           "precision": 1.0,
           "recall": 1.0,
           "f1-score": 1.0,
-          "support": 25.0
+          "support": 23.0
         },
         "accuracy": 1.0,
         "macro avg": {
           "precision": 1.0,
           "recall": 1.0,
           "f1-score": 1.0,
-          "support": 75.0
+          "support": 72.0
         },
         "weighted avg": {
           "precision": 1.0,
           "recall": 1.0,
           "f1-score": 1.0,
-          "support": 75.0
+          "support": 72.0
         }
       },
       "confusionMatrix": [
@@ -88,56 +95,56 @@
         ],
         [
           0,
-          24,
+          23,
           0
         ],
         [
           0,
           0,
-          25
+          23
         ]
       ]
     },
     "test": {
-      "macroF1": 1.0,
-      "accuracy": 1.0,
+      "macroF1": 0.9729693586836444,
+      "accuracy": 0.9726027397260274,
       "report": {
         "Neighbor / Community Issues": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1-score": 1.0,
+          "precision": 0.9615384615384616,
+          "recall": 0.9615384615384616,
+          "f1-score": 0.9615384615384616,
           "support": 26.0
         },
         "Public Nuisance / Cleanliness": {
-          "precision": 1.0,
+          "precision": 0.96,
           "recall": 1.0,
-          "f1-score": 1.0,
+          "f1-score": 0.9795918367346939,
           "support": 24.0
         },
         "traffic issues": {
           "precision": 1.0,
-          "recall": 1.0,
-          "f1-score": 1.0,
-          "support": 25.0
+          "recall": 0.9565217391304348,
+          "f1-score": 0.9777777777777777,
+          "support": 23.0
         },
-        "accuracy": 1.0,
+        "accuracy": 0.9726027397260274,
         "macro avg": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1-score": 1.0,
-          "support": 75.0
+          "precision": 0.9738461538461539,
+          "recall": 0.9726867335562988,
+          "f1-score": 0.9729693586836444,
+          "support": 73.0
         },
         "weighted avg": {
-          "precision": 1.0,
-          "recall": 1.0,
-          "f1-score": 1.0,
-          "support": 75.0
+          "precision": 0.9731506849315067,
+          "recall": 0.9726027397260274,
+          "f1-score": 0.9725903146646785,
+          "support": 73.0
         }
       },
       "confusionMatrix": [
         [
-          26,
-          0,
+          25,
+          1,
           0
         ],
         [
@@ -146,9 +153,9 @@
           0
         ],
         [
+          1,
           0,
-          0,
-          25
+          22
         ]
       ]
     }

@@ -95,6 +95,39 @@ const buildOfficerMap = (officerDocuments) => {
   return map;
 };
 
+const toMillis = (value) => {
+  if (!value) {
+    return 0;
+  }
+
+  if (typeof value?.toMillis === 'function') {
+    return value.toMillis();
+  }
+
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Date.parse(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  if (
+    typeof value === 'object' &&
+    Number.isFinite(value.seconds) &&
+    Number.isFinite(value.nanoseconds)
+  ) {
+    return (value.seconds * 1000) + Math.floor(value.nanoseconds / 1000000);
+  }
+
+  return 0;
+};
+
 const findOfficerByIdAndStation = (officerMap, officerID, stationID) => {
   if (!officerID) {
     return null;
@@ -184,6 +217,9 @@ export default function Activities({ citizen }) {
             complaintStationId
           );
 
+          const createdAtMs = toMillis(data.createdAt);
+          const updatedAtMs = toMillis(data.updatedAt);
+
           return {
             id: documentSnapshot.id,
             trackID: formatTrackID(data.trackID),
@@ -203,7 +239,15 @@ export default function Activities({ citizen }) {
             officerName: matchedOfficer?.officerName || 'Unassigned',
             officerContact: matchedOfficer?.officerContact || 'N/A',
             officerID: complaintOfficerId || 'N/A',
+            createdAtMs,
+            updatedAtMs,
           };
+        });
+
+        nextComplaints.sort((a, b) => {
+          const bTime = b.createdAtMs || b.updatedAtMs || 0;
+          const aTime = a.createdAtMs || a.updatedAtMs || 0;
+          return bTime - aTime;
         });
 
         setComplaints(nextComplaints);

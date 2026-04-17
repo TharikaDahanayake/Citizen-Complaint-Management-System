@@ -25,21 +25,68 @@ def normalize_text(value: str) -> str:
     return " ".join(text.split()).strip()
 
 
-def load_and_clean_dataset(data_path: Path) -> pd.DataFrame:
-    dataframe = pd.read_excel(data_path)
-
+def load_dataset_table(data_path: Path) -> tuple[pd.DataFrame, str]:
     required_columns = {"complaint", "category"}
-    missing = required_columns - set(dataframe.columns)
-    if missing:
-        raise ValueError(f"Missing required columns: {sorted(missing)}")
+
+    if data_path.suffix.lower() == ".csv":
+        dataframe = pd.read_csv(data_path)
+        missing = required_columns - set(dataframe.columns)
+        if missing:
+            raise ValueError(f"Missing required columns in CSV: {sorted(missing)}")
+        return dataframe, "csv"
+
+    workbook = pd.ExcelFile(data_path)
+    for sheet_name in workbook.sheet_names:
+        dataframe = pd.read_excel(workbook, sheet_name=sheet_name)
+        if required_columns.issubset(set(dataframe.columns)):
+            return dataframe, sheet_name
+
+    available = {
+        sheet_name: pd.read_excel(workbook, sheet_name=sheet_name, nrows=0).columns.tolist()
+        for sheet_name in workbook.sheet_names
+    }
+    raise ValueError(
+        "Missing required columns ['complaint', 'category'] in all sheets. "
+        f"Found columns by sheet: {available}"
+    )
+
+
+def load_and_clean_dataset(data_path: Path) -> tuple[pd.DataFrame, dict]:
+    dataframe, source_sheet = load_dataset_table(data_path)
+
+    original_rows = int(len(dataframe))
 
     cleaned = dataframe[["complaint", "category"]].copy()
     cleaned["complaint"] = cleaned["complaint"].map(normalize_text)
     cleaned["category"] = cleaned["category"].map(normalize_label)
     cleaned = cleaned[cleaned["complaint"].str.len() > 0]
+
+    # Use normalized text key to detect and remove exact complaint duplicates.
+    cleaned["complaint_key"] = cleaned["complaint"].str.lower()
+    conflicting = cleaned.groupby("complaint_key")["category"].nunique()
+    conflicting = conflicting[conflicting > 1]
+    if not conflicting.empty:
+        samples = cleaned[cleaned["complaint_key"].isin(conflicting.index)][["complaint", "category"]].head(5)
+        raise ValueError(
+            "Found complaint texts mapped to multiple categories. "
+            f"Examples: {samples.to_dict(orient='records')}"
+        )
+
+    before_dedupe = int(len(cleaned))
+    cleaned = cleaned.drop_duplicates(subset=["complaint_key", "category"], keep="first")
+    deduplicated_rows = int(before_dedupe - len(cleaned))
+    cleaned = cleaned.drop(columns=["complaint_key"])
     cleaned = cleaned.reset_index(drop=True)
 
-    return cleaned
+    cleaning_stats = {
+        "sourceSheet": source_sheet,
+        "originalRows": original_rows,
+        "nonEmptyRows": before_dedupe,
+        "deduplicatedRows": deduplicated_rows,
+        "rowsAfterCleaning": int(len(cleaned)),
+    }
+
+    return cleaned, cleaning_stats
 
 
 def split_data(cleaned: pd.DataFrame, seed: int):
@@ -108,7 +155,7 @@ def main():
     data_path = Path(args.data)
     output_dir = Path(args.output)
 
-    cleaned = load_and_clean_dataset(data_path)
+    cleaned, cleaning_stats = load_and_clean_dataset(data_path)
     train_df, valid_df, test_df = split_data(cleaned, seed=args.seed)
 
     vectorizer = TfidfVectorizer(
@@ -183,6 +230,7 @@ def main():
         },
         "data": {
             "path": str(data_path),
+            "cleaning": cleaning_stats,
             "totalRows": int(len(cleaned)),
             "split": {
                 "train": int(len(train_df)),
