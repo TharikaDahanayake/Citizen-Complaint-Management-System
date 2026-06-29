@@ -1,11 +1,3 @@
-/**
- * locationRoutingService.js
- * 
- * Handles location-based complaint routing:
- * - Calculates distance between two coordinates using Haversine formula
- * - Finds nearest police station from complaint location
- * - Prepares station data for complaint document
- */
 
 /**
  * Haversine formula to calculate distance between two latitude/longitude points
