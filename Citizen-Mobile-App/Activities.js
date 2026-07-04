@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { generateAnonOwnerHash } from './anonTracking';
 import { db } from './firebaseConfig';
 
@@ -163,7 +163,10 @@ export default function Activities({ citizen }) {
   const [activeTab, setActiveTab] = useState('Pending');
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [expandedComplaints, setExpandedComplaints] = useState({});
+  const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [savingFeedback, setSavingFeedback] = useState(false);
+  const [feedbackNotice, setFeedbackNotice] = useState('');
 
   const citizenId = useMemo(
     () => citizen?.citizenUid || citizen?.citizenID || '',
@@ -233,6 +236,7 @@ export default function Activities({ citizen }) {
               : [],
             status: data.status || data.complaintStatus || 'Pending',
             comment: data.comment || '',
+            feedback: data.feedback || '',
             stationID: complaintStationId || 'N/A',
             stationName: data.stationName || 'N/A',
             department: data.department || 'N/A',
@@ -267,13 +271,6 @@ export default function Activities({ citizen }) {
     [activeTab, complaints]
   );
 
-  const toggleExpanded = (complaintId) => {
-    setExpandedComplaints((previous) => ({
-      ...previous,
-      [complaintId]: !previous[complaintId],
-    }));
-  };
-
   const openExternalLink = async (url) => {
     if (!url) {
       return;
@@ -282,6 +279,59 @@ export default function Activities({ citizen }) {
     const canOpen = await Linking.canOpenURL(url);
     if (canOpen) {
       await Linking.openURL(url);
+    }
+  };
+
+  const openComplaintDetails = (complaint) => {
+    setSelectedComplaint(complaint);
+    setFeedbackText(complaint.feedback || '');
+    setFeedbackNotice('');
+  };
+
+  const closeComplaintDetails = () => {
+    setSelectedComplaint(null);
+    setFeedbackText('');
+    setFeedbackNotice('');
+  };
+
+  const submitFeedback = async () => {
+    if (!selectedComplaint || normalizeStatus(selectedComplaint.status) !== 'resolved') {
+      return;
+    }
+
+    const trimmedFeedback = feedbackText.trim();
+    if (!trimmedFeedback) {
+      return;
+    }
+
+    setSavingFeedback(true);
+
+    try {
+      await updateDoc(doc(db, 'complaints', selectedComplaint.id), {
+        feedback: trimmedFeedback,
+        feedbackAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      setSelectedComplaint((previousComplaint) => ({
+        ...previousComplaint,
+        feedback: trimmedFeedback,
+      }));
+
+      setFeedbackText(trimmedFeedback);
+      setFeedbackNotice('Feedback submitted successfully.');
+
+      setComplaints((previousComplaints) => (
+        previousComplaints.map((complaint) => (
+          complaint.id === selectedComplaint.id
+            ? { ...complaint, feedback: trimmedFeedback }
+            : complaint
+        ))
+      ));
+    } catch (error) {
+      console.error('Unable to save feedback:', error);
+    } finally {
+      setSavingFeedback(false);
     }
   };
 
@@ -296,103 +346,169 @@ export default function Activities({ citizen }) {
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
       <Text style={styles.heading}>Activities</Text>
 
-      <View style={styles.tabBar}>
-        {tabs.map((tab) => {
-          const isActive = tab === activeTab;
-          return (
-            <Pressable
-              key={tab}
-              style={[styles.tabButton, isActive && styles.activeTabButton]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[styles.tabText, isActive && styles.activeTabText]}>{tab}</Text>
+      {selectedComplaint ? (
+        <View style={styles.detailPageCard}>
+          <Text style={styles.detailPageTitle}>{selectedComplaint.title}</Text>
+          <Text style={styles.detailPageSubtitle}>{activeTab} Complaint Details</Text>
+
+          <View style={styles.trackIdBadge}>
+            <Text style={styles.trackIdBadgeText}>Track ID: {selectedComplaint.trackID}</Text>
+          </View>
+
+          <View style={styles.badgeRow}>
+            <View style={styles.primaryBadge}>
+              <Text style={styles.primaryBadgeText}>Status: {selectedComplaint.status}</Text>
+            </View>
+            <View style={styles.secondaryBadge}>
+              <Text style={styles.secondaryBadgeText}>{selectedComplaint.complaintCategory}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitleText}>Description</Text>
+          <View style={styles.descriptionBox}>
+            <Text style={styles.descriptionText}>{selectedComplaint.description}</Text>
+          </View>
+
+          <Text style={styles.sectionTitleText}>Location</Text>
+          {selectedComplaint.locationUrl ? (
+            <Pressable style={styles.actionLink} onPress={() => openExternalLink(selectedComplaint.locationUrl)}>
+              <Text style={styles.actionLinkText}>Show location</Text>
             </Pressable>
-          );
-        })}
-      </View>
+          ) : (
+            <Text style={styles.emptyText}>N/A</Text>
+          )}
 
-      <View style={styles.subPageCard}>
-        <Text style={styles.subPageTitle}>{activeTab} Complaints</Text>
+          <Text style={styles.sectionTitleText}>Evidence</Text>
+          {selectedComplaint.evidenceUrls.length > 0 ? (
+            selectedComplaint.evidenceUrls.map((url, index) => (
+              <Pressable
+                key={`${selectedComplaint.id}-evidence-${index}`}
+                style={styles.actionLink}
+                onPress={() => openExternalLink(url)}
+              >
+                <Text style={styles.actionLinkText}>Open Evidence {index + 1}</Text>
+              </Pressable>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No evidence links</Text>
+          )}
 
-        {loading ? <Text style={styles.bodyText}>Loading complaints...</Text> : null}
+          <Text style={styles.sectionTitleText}>Assignment</Text>
+          <DetailRow label="Station Name" value={selectedComplaint.stationName} />
+          <DetailRow label="Department" value={selectedComplaint.department} />
+          <DetailRow label="Officer Name" value={selectedComplaint.officerName} />
+          <DetailRow label="Officer Contact" value={selectedComplaint.officerContact} />
+          {activeTab === 'Resolved' ? (
+            <DetailRow label="Solution" value={selectedComplaint.comment || 'N/A'} />
+          ) : null}
 
-        {!loading && filteredComplaints.length === 0 ? (
-          <Text style={styles.bodyText}>{tabMessages[activeTab]}</Text>
-        ) : null}
+          {normalizeStatus(selectedComplaint.status) === 'resolved' ? (
+            <View style={styles.feedbackSection}>
+              <Text style={styles.feedbackLabel}>Feedback</Text>
 
-        {!loading
-          ? filteredComplaints.map((complaint) => {
-              const isExpanded = !!expandedComplaints[complaint.id];
+              {selectedComplaint.feedback ? (
+                <View style={styles.feedbackSavedBox}>
+                  <Text style={styles.feedbackSavedText}>{selectedComplaint.feedback}</Text>
+                </View>
+              ) : (
+                <>
+                  <TextInput
+                    style={styles.feedbackInput}
+                    value={feedbackText}
+                    onChangeText={setFeedbackText}
+                    placeholder="Enter your feedback here"
+                    placeholderTextColor="#94a3b8"
+                    multiline
+                    textAlignVertical="top"
+                  />
 
+                  <Pressable
+                    style={[styles.feedbackButton, savingFeedback && styles.feedbackButtonDisabled]}
+                    onPress={submitFeedback}
+                    disabled={savingFeedback}
+                  >
+                    <Text style={styles.feedbackButtonText}>
+                      {savingFeedback ? 'Saving...' : 'Give Feedback'}
+                    </Text>
+                  </Pressable>
+                </>
+              )}
+
+              {feedbackNotice ? <Text style={styles.feedbackSuccessText}>{feedbackNotice}</Text> : null}
+            </View>
+          ) : null}
+
+          <Pressable style={styles.backButton} onPress={closeComplaintDetails}>
+            <Text style={styles.backButtonText}>Back</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {!selectedComplaint ? (
+        <>
+          <View style={styles.tabBar}>
+            {tabs.map((tab) => {
+              const isActive = tab === activeTab;
               return (
-                <View key={complaint.id} style={styles.complaintBox}>
-                  <Text style={styles.complaintTitle}>{complaint.title}</Text>
-                  <View style={styles.trackIdBadge}>
-                    <Text style={styles.trackIdBadgeText}>Track ID: {complaint.trackID}</Text>
-                  </View>
-                  <View style={styles.badgeRow}>
-                    <View style={styles.primaryBadge}>
-                      <Text style={styles.primaryBadgeText}>Status: {complaint.status}</Text>
-                    </View>
-                    <View style={styles.secondaryBadge}>
-                      <Text style={styles.secondaryBadgeText}>{complaint.complaintCategory}</Text>
-                    </View>
-                  </View>
+                <Pressable
+                  key={tab}
+                  style={[styles.tabButton, isActive && styles.activeTabButton]}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <Text style={[styles.tabText, isActive && styles.activeTabText]}>{tab}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
 
-                  {!isExpanded ? null : (
-                    <View style={styles.detailsContainer}>
-                      <Text style={styles.sectionTitleText}>Description</Text>
-                      <View style={styles.descriptionBox}>
-                        <Text style={styles.descriptionText}>{complaint.description}</Text>
+          <View style={styles.subPageCard}>
+            <View style={styles.subPageHeader}>
+              <View>
+                <Text style={styles.subPageTitle}>{activeTab} Complaints</Text>
+                <Text style={styles.subPageSubtitle}>Tap Details to open a full complaint page.</Text>
+              </View>
+            </View>
+
+            {loading ? <Text style={styles.bodyText}>Loading complaints...</Text> : null}
+
+            {!loading && filteredComplaints.length === 0 ? (
+              <Text style={styles.bodyText}>{tabMessages[activeTab]}</Text>
+            ) : null}
+
+            {!loading
+              ? filteredComplaints.map((complaint) => (
+                  <View key={complaint.id} style={styles.complaintBox}>
+                    <View style={styles.complaintHeader}>
+                      <View style={styles.complaintHeaderText}>
+                        <Text style={styles.complaintTitle}>{complaint.title}</Text>
+                        <View style={styles.trackIdBadge}>
+                          <Text style={styles.trackIdBadgeText}>Track ID: {complaint.trackID}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.statusPill}>
+                        <Text style={styles.statusPillText}>{complaint.status}</Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.complaintPreview} numberOfLines={2}>
+                      {complaint.description}
+                    </Text>
+
+                    <View style={styles.complaintFooter}>
+                      <View style={styles.categoryPill}>
+                        <Text style={styles.categoryPillText}>{complaint.complaintCategory}</Text>
                       </View>
 
-                      <Text style={styles.sectionTitleText}>Location</Text>
-                      {complaint.locationUrl ? (
-                        <Pressable style={styles.actionLink} onPress={() => openExternalLink(complaint.locationUrl)}>
-                          <Text style={styles.actionLinkText}>Show location</Text>
-                        </Pressable>
-                      ) : (
-                        <Text style={styles.emptyText}>N/A</Text>
-                      )}
-
-                      <Text style={styles.sectionTitleText}>Evidence</Text>
-                      {complaint.evidenceUrls.length > 0 ? (
-                        complaint.evidenceUrls.map((url, index) => (
-                          <Pressable
-                            key={`${complaint.id}-evidence-${index}`}
-                            style={styles.actionLink}
-                            onPress={() => openExternalLink(url)}
-                          >
-                            <Text style={styles.actionLinkText}>Open Evidence {index + 1}</Text>
-                          </Pressable>
-                        ))
-                      ) : (
-                        <Text style={styles.emptyText}>No evidence links</Text>
-                      )}
-
-                      <Text style={styles.sectionTitleText}>Assignment</Text>
-                      <DetailRow label="Station Name" value={complaint.stationName} />
-                      <DetailRow label="Department" value={complaint.department} />
-                      {activeTab === 'Resolved' ? (
-                        <DetailRow label="Solution" value={complaint.comment || 'N/A'} />
-                      ) : null}
-                      {activeTab === 'Ongoing' ? (
-                        <DetailRow label="Officer Name" value={complaint.officerName} />
-                      ) : null}
-                      {activeTab === 'Ongoing' ? (
-                        <DetailRow label="Officer Contact" value={complaint.officerContact} />
-                      ) : null}
+                      <Pressable style={styles.detailsButton} onPress={() => openComplaintDetails(complaint)}>
+                        <Text style={styles.detailsButtonText}>Details</Text>
+                      </Pressable>
                     </View>
-                  )}
-
-                  <Pressable style={styles.detailsButton} onPress={() => toggleExpanded(complaint.id)}>
-                    <Text style={styles.detailsButtonText}>{isExpanded ? 'Hide Details' : 'Details'}</Text>
-                  </Pressable>
-                </View>
-              );
-            })
-          : null}
-      </View>
+                  </View>
+                ))
+              : null}
+          </View>
+        </>
+      ) : null}
     </ScrollView>
   );
 }
@@ -438,24 +554,130 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
+  subPageHeader: {
+    marginBottom: 8,
+  },
   subPageTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 8,
+  },
+  subPageSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 4,
   },
   bodyText: {
     fontSize: 15,
     color: '#334155',
     marginBottom: 8,
   },
-  complaintBox: {
+  detailPageCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    marginBottom: 14,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#1E3A8A',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  backButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  detailPageTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  detailPageSubtitle: {
+    fontSize: 13,
+    color: '#64748b',
+    marginBottom: 12,
+  },
+  feedbackSection: {
+    marginTop: 10,
+  },
+  feedbackLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+    marginBottom: 8,
+  },
+  feedbackInput: {
+    minHeight: 110,
     borderWidth: 1,
     borderColor: '#cbd5e1',
     borderRadius: 10,
-    padding: 12,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#0f172a',
+    marginBottom: 10,
+  },
+  feedbackButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#1E3A8A',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  feedbackButtonDisabled: {
+    opacity: 0.7,
+  },
+  feedbackButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  feedbackSavedBox: {
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    backgroundColor: '#f0fdf4',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  feedbackSavedText: {
+    fontSize: 14,
+    color: '#166534',
+    lineHeight: 20,
+  },
+  feedbackSuccessText: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#15803d',
+  },
+  complaintBox: {
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    borderRadius: 16,
+    padding: 14,
     marginTop: 12,
     backgroundColor: '#ffffff',
+  },
+  complaintHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 6,
+  },
+  complaintHeaderText: {
+    flex: 1,
   },
   complaintTitle: {
     fontSize: 16,
@@ -463,20 +685,24 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginBottom: 4,
   },
+  complaintMeta: {
+    fontSize: 12,
+    color: '#64748b',
+  },
   trackIdBadge: {
     alignSelf: 'flex-start',
-    /*backgroundColor: '#ecfeff',
+    backgroundColor: '#eff6ff',
     borderWidth: 1,
-    borderColor: '#67e8f9',*/
+    borderColor: '#bfdbfe',
     borderRadius: 999,
-    paddingHorizontal: 0,
+    paddingHorizontal: 10,
     paddingVertical: 5,
-    marginBottom: 10,
+    marginBottom: 6,
   },
   trackIdBadgeText: {
     fontSize: 12,
     fontWeight: '700',
-    /*color: '#155e75',*/
+    color: '#1d4ed8',
   },
  
   badgeRow: {
@@ -506,8 +732,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#854d0e',
   },
-  detailsContainer: {
-    marginBottom: 10,
+  complaintPreview: {
+    fontSize: 14,
+    color: '#334155',
+    lineHeight: 20,
+    marginBottom: 6,
   },
   sectionTitleText: {
     fontSize: 13,
@@ -562,12 +791,42 @@ const styles = StyleSheet.create({
     color: '#0f172a',
     marginTop: 2,
   },
-  detailsButton: {
+  complaintFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 8,
+  },
+  statusPill: {
+    backgroundColor: '#e2e8f0',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     alignSelf: 'flex-start',
+  },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  categoryPill: {
+    backgroundColor: '#fef9c3',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    flex: 1,
+  },
+  categoryPillText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#854d0e',
+  },
+  detailsButton: {
     backgroundColor: '#1E3A8A',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   detailsButtonText: {
     color: '#ffffff',

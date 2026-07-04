@@ -11,6 +11,7 @@ import AnonymousComplaintSubmission from './AnonymousComplaintSubmission';
 import NonAnonymousComplaintSubmission from './NonAnonymousComplaintSubmission';
 import { generateAnonOwnerHash } from './anonTracking';
 import { db } from './firebaseConfig';
+import { syncNotificationsForCitizen } from './notificationSyncService';
 
 const TABS = [
   { key: 'home', label: 'Home', icon: 'home' },
@@ -18,6 +19,14 @@ const TABS = [
   { key: 'notifications', label: 'Notifications', icon: 'notifications' },
   { key: 'profile', label: 'Profile', icon: 'person' },
 ];
+
+const normalizeStatus = (value) => (value || '').toString().trim().toLowerCase();
+const normalizeReadStatus = (value) => (value || '').toString().trim().toUpperCase();
+
+const buildNotificationKey = (complaintId, complaintStatus) => {
+  const normalizedComplaintStatus = normalizeStatus(complaintStatus) || 'pending';
+  return `${complaintId}_${normalizedComplaintStatus}`;
+};
 
 export default function CitizenDashboard({ citizen, onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
@@ -32,28 +41,68 @@ export default function CitizenDashboard({ citizen, onLogout }) {
 
   useEffect(() => {
     let isCancelled = false;
+    let unsubscribeCitizenComplaints = null;
+    let unsubscribeAnonymousComplaints = null;
     let unsubscribeCitizenNotifications = null;
     let unsubscribeAnonymousNotifications = null;
 
-    const normalizeReadStatus = (value) => (value || '').toString().trim().toUpperCase();
+    const updateUnreadCount = (
+      citizenComplaintsSnapshot,
+      anonymousComplaintsSnapshot,
+      citizenNotificationsSnapshot,
+      anonymousNotificationsSnapshot
+    ) => {
+      const activeNotificationKeys = new Set();
 
-    const updateUnreadCount = (citizenSnapshot, anonymousSnapshot) => {
+      citizenComplaintsSnapshot.docs.forEach((documentSnapshot) => {
+        const data = documentSnapshot.data() || {};
+        activeNotificationKeys.add(
+          buildNotificationKey(
+            documentSnapshot.id,
+            data.status || data.complaintStatus || 'Pending'
+          )
+        );
+      });
+
+      anonymousComplaintsSnapshot.docs.forEach((documentSnapshot) => {
+        const data = documentSnapshot.data() || {};
+        activeNotificationKeys.add(
+          buildNotificationKey(
+            documentSnapshot.id,
+            data.status || data.complaintStatus || 'Pending'
+          )
+        );
+      });
+
       const notificationMap = new Map();
 
-      citizenSnapshot.docs.forEach((documentSnapshot) => {
-        notificationMap.set(documentSnapshot.id, documentSnapshot);
-      });
+      const addNotificationDocs = (snapshot) => {
+        snapshot.docs.forEach((documentSnapshot) => {
+          const data = documentSnapshot.data() || {};
+          const key = (data.notificationKey || documentSnapshot.id).toString().trim();
+          notificationMap.set(key, documentSnapshot);
+        });
+      };
 
-      anonymousSnapshot.docs.forEach((documentSnapshot) => {
-        notificationMap.set(documentSnapshot.id, documentSnapshot);
-      });
+      addNotificationDocs(citizenNotificationsSnapshot);
+      addNotificationDocs(anonymousNotificationsSnapshot);
 
-      const unreadCount = Array.from(notificationMap.values()).filter((documentSnapshot) => {
+      const unreadCount = Array.from(notificationMap.entries()).filter(([notificationKey, documentSnapshot]) => {
         const data = documentSnapshot.data() || {};
-        return normalizeReadStatus(data.status) === 'UNREAD';
+        return activeNotificationKeys.has(notificationKey) && normalizeReadStatus(data.status) === 'UNREAD';
       }).length;
 
       setUnreadNotificationCount(unreadCount);
+    };
+
+    const refreshNotificationsFromComplaints = async () => {
+      try {
+        const nextNotifications = await syncNotificationsForCitizen(citizenId);
+        const unreadCount = nextNotifications.filter((notification) => normalizeReadStatus(notification.status) === 'UNREAD').length;
+        setUnreadNotificationCount(unreadCount);
+      } catch (error) {
+        console.error('Unable to refresh notifications for badge count:', error);
+      }
     };
 
     const subscribeToNotifications = async () => {
@@ -77,15 +126,59 @@ export default function CitizenDashboard({ citizen, onLogout }) {
           collection(db, 'notifications'),
           where('anonOwnerHash', '==', anonOwnerHash)
         );
+        const citizenComplaintsQuery = query(
+          collection(db, 'complaints'),
+          where('citizenID', '==', citizenId)
+        );
+        const anonymousComplaintsQuery = query(
+          collection(db, 'complaints'),
+          where('anonOwnerHash', '==', anonOwnerHash)
+        );
 
+        let citizenComplaintsSnapshot = null;
+        let anonymousComplaintsSnapshot = null;
         let citizenSnapshot = null;
         let anonymousSnapshot = null;
 
         const maybeUpdateUnreadCount = () => {
-          if (citizenSnapshot && anonymousSnapshot) {
-            updateUnreadCount(citizenSnapshot, anonymousSnapshot);
+          if (
+            citizenComplaintsSnapshot &&
+            anonymousComplaintsSnapshot &&
+            citizenSnapshot &&
+            anonymousSnapshot
+          ) {
+            updateUnreadCount(
+              citizenComplaintsSnapshot,
+              anonymousComplaintsSnapshot,
+              citizenSnapshot,
+              anonymousSnapshot
+            );
           }
         };
+
+        unsubscribeCitizenComplaints = onSnapshot(
+          citizenComplaintsQuery,
+          (snapshot) => {
+            citizenComplaintsSnapshot = snapshot;
+            refreshNotificationsFromComplaints();
+            maybeUpdateUnreadCount();
+          },
+          (error) => {
+            console.error('Unable to subscribe to citizen complaints:', error);
+          }
+        );
+
+        unsubscribeAnonymousComplaints = onSnapshot(
+          anonymousComplaintsQuery,
+          (snapshot) => {
+            anonymousComplaintsSnapshot = snapshot;
+            refreshNotificationsFromComplaints();
+            maybeUpdateUnreadCount();
+          },
+          (error) => {
+            console.error('Unable to subscribe to anonymous complaints:', error);
+          }
+        );
 
         unsubscribeCitizenNotifications = onSnapshot(
           citizenNotificationsQuery,
@@ -118,6 +211,12 @@ export default function CitizenDashboard({ citizen, onLogout }) {
 
     return () => {
       isCancelled = true;
+      if (unsubscribeCitizenComplaints) {
+        unsubscribeCitizenComplaints();
+      }
+      if (unsubscribeAnonymousComplaints) {
+        unsubscribeAnonymousComplaints();
+      }
       if (unsubscribeCitizenNotifications) {
         unsubscribeCitizenNotifications();
       }
