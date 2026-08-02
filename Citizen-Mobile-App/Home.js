@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { generateAnonOwnerHash } from './anonTracking';
+import { getComplaintStatusBucket } from './statusUtils';
 
 const QUICK_ACTIONS = [
   { key: 'new-complaint', label: 'New Complaint', icon: 'document-text-outline' },
@@ -94,23 +95,20 @@ export default function Home({ citizen, onNewComplaintPress }) {
 
         complaintDocuments.forEach((documentSnapshot) => {
           const data = documentSnapshot.data();
-          const rawStatus = (data?.status || data?.complaintStatus || 'pending')
-            .toString()
-            .trim()
-            .toLowerCase();
+          const bucket = getComplaintStatusBucket(data?.status || data?.complaintStatus || 'pending');
 
-          if (rawStatus.includes('resolved')) {
+          if (bucket === 'resolved') {
             nextCounts.resolved += 1;
             return;
           }
 
-          if (rawStatus.includes('ongoing')) {
+          if (bucket === 'inReview') {
             nextCounts.inReview += 1;
             return;
           }
 
-          if (rawStatus.includes('pending')) {
-            nextCounts.pending += 1;
+          if (bucket === 'escalated') {
+            nextCounts.inReview += 1;
             return;
           }
 

@@ -12,6 +12,7 @@ import NonAnonymousComplaintSubmission from './NonAnonymousComplaintSubmission';
 import { generateAnonOwnerHash } from './anonTracking';
 import { db } from './firebaseConfig';
 import { syncNotificationsForCitizen } from './notificationSyncService';
+import { normalizeStatus } from './statusUtils';
 
 const TABS = [
   { key: 'home', label: 'Home', icon: 'home' },
@@ -20,7 +21,6 @@ const TABS = [
   { key: 'profile', label: 'Profile', icon: 'person' },
 ];
 
-const normalizeStatus = (value) => (value || '').toString().trim().toLowerCase();
 const normalizeReadStatus = (value) => (value || '').toString().trim().toUpperCase();
 
 const buildNotificationKey = (complaintId, complaintStatus) => {

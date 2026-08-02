@@ -3,8 +3,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } fro
 import { collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { generateAnonOwnerHash } from './anonTracking';
 import { db } from './firebaseConfig';
-
-const normalizeStatus = (value) => (value || '').toString().trim().toLowerCase();
+import { normalizeStatus, statusMatchesTab } from './statusUtils';
 
 const formatTrackID = (value) => {
   if (value === null || value === undefined) {
@@ -21,28 +20,6 @@ const formatTrackID = (value) => {
   }
 
   return normalized;
-};
-
-const statusMatchesTab = (statusValue, tabLabel) => {
-  const status = normalizeStatus(statusValue);
-
-  if (tabLabel === 'Pending') {
-    return status.includes('pending') || !status;
-  }
-
-  if (tabLabel === 'Ongoing') {
-    return status.includes('ongoing') || status.includes('progress') || status.includes('in progress');
-  }
-
-  if (tabLabel === 'Escalated') {
-    return status.includes('escalat');
-  }
-
-  if (tabLabel === 'Resolved') {
-    return status.includes('resolved');
-  }
-
-  return false;
 };
 
 const buildLocationUrl = (complaint) => {
