@@ -14,6 +14,7 @@ const INITIAL_SUMMARY_COUNTS = {
   total: 0,
   pending: 0,
   inReview: 0,
+  escalated: 0,
   resolved: 0,
 };
 
@@ -90,6 +91,7 @@ export default function Home({ citizen, onNewComplaintPress }) {
           total: complaintDocuments.length,
           pending: 0,
           inReview: 0,
+          escalated: 0,
           resolved: 0,
         };
 
@@ -108,7 +110,7 @@ export default function Home({ citizen, onNewComplaintPress }) {
           }
 
           if (bucket === 'escalated') {
-            nextCounts.inReview += 1;
+            nextCounts.escalated += 1;
             return;
           }
 
@@ -130,6 +132,7 @@ export default function Home({ citizen, onNewComplaintPress }) {
       { key: 'total', label: 'Total Complaints', value: summaryCounts.total },
       { key: 'pending', label: 'Pending', value: summaryCounts.pending },
       { key: 'in-review', label: 'In Review', value: summaryCounts.inReview },
+      { key: 'escalated', label: 'Escalated', value: summaryCounts.escalated },
       { key: 'resolved', label: 'Resolved', value: summaryCounts.resolved },
     ],
     [summaryCounts]

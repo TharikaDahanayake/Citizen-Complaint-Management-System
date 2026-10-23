@@ -42,7 +42,7 @@ const statusMatchesTab = (statusValue, tabLabel) => {
   }
 
   if (tabLabel === 'Ongoing') {
-    return bucket === 'inReview' || bucket === 'escalated';
+    return bucket === 'inReview';
   }
 
   if (tabLabel === 'Escalated') {

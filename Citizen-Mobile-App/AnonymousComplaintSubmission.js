@@ -183,7 +183,7 @@ export default function AnonymousComplaintSubmission({ onBack }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        mediaTypes: [ImagePicker.MediaType.Images, ImagePicker.MediaType.Videos],
         allowsEditing: false,
         allowsMultipleSelection: true,
         quality: 0.8,

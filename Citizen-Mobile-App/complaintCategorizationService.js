@@ -1,5 +1,5 @@
 const DEFAULT_PREDICTION_URL = 'http://10.0.2.2:8000/predict';
-const PREDICTION_TIMEOUT_MS = 4000;
+const PREDICTION_TIMEOUT_MS = 15000;
 
 const CATEGORY_TRAFFIC = 'traffic issues';
 const CATEGORY_NUISANCE = 'Public Nuisance / Cleanliness';

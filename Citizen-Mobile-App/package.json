@@ -10,16 +10,18 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-community/datetimepicker": "8.4.4",
-    "expo": "~55.0.6",
-    "expo-crypto": "~15.0.7",
-    "expo-image-picker": "~17.0.10",
-    "expo-location": "~19.0.8",
-    "expo-status-bar": "~3.0.9",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-community/datetimepicker": "9.2.1",
+    "expo": "^58.0.0",
+    "expo-crypto": "~58.0.7",
+    "expo-font": "~58.0.9",
+    "expo-image-picker": "~58.0.10",
+    "expo-location": "~58.0.18",
+    "expo-status-bar": "~58.0.4",
     "firebase": "^12.10.0",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-maps": "1.20.1"
+    "react": "19.3.0",
+    "react-native": "0.88.0",
+    "react-native-maps": "1.29.11"
   },
   "private": true,
   "devDependencies": {
