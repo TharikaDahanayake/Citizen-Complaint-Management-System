@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, limit, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { Ionicons } from '@expo/vector-icons';
 import { auth, db } from './firebaseConfig';
 import CitizenDashboard from './CitizenDashboard';
 
@@ -345,46 +346,47 @@ export default function App() {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {showRegistration ? (
           <>
-            <Text style={styles.title}>Citizen Registration</Text>
-            <Text style={styles.subtitle}>Create your account and save details to Firebase</Text>
+            <Text style={styles.title}>Create your account</Text>
+           
 
             <TextInput
               style={styles.input}
-              placeholder="CitizenName"
+              placeholder="Enter your name"
               value={form.citizenName}
               onChangeText={(text) => updateField('citizenName', text)}
             />
             <TextInput
               style={styles.input}
-              placeholder="CitizenEmail"
+              placeholder="Enter your email"
               keyboardType="email-address"
+              
               autoCapitalize="none"
               value={form.citizenEmail}
               onChangeText={(text) => updateField('citizenEmail', text)}
             />
             <TextInput
               style={styles.input}
-              placeholder="CitizenContact"
+              placeholder="Enter your contact number"
               keyboardType="phone-pad"
               value={form.citizenContact}
               onChangeText={(text) => updateField('citizenContact', text)}
             />
             <TextInput
               style={styles.input}
-              placeholder="CitizenDistrict"
+              placeholder="Enter your district"
               value={form.citizenDistrict}
               onChangeText={(text) => updateField('citizenDistrict', text)}
             />
             <TextInput
               style={styles.input}
-              placeholder="CitizenNic"
+              placeholder="Enter your NIC"
               autoCapitalize="characters"
               value={form.citizenNic}
               onChangeText={(text) => updateField('citizenNic', text)}
             />
             <TextInput
               style={styles.input}
-              placeholder="CitizenPassword"
+              placeholder="Enter your password"
               secureTextEntry
               value={form.citizenPassword}
               onChangeText={(text) => updateField('citizenPassword', text)}
@@ -408,39 +410,74 @@ export default function App() {
           </>
         ) : (
           <>
-            <Text style={styles.title}>Citizen Login</Text>
-            <Text style={styles.subtitle}>Sign in with your registered email and password</Text>
-            {isLoginLocked ? (
-              <Text style={styles.lockText}>Login locked. Try again in {lockSecondsRemaining} seconds.</Text>
-            ) : null}
+            <View style={styles.loginHero}>
+              
+              <Text style={styles.loginWelcome}>Welcome back</Text>
+              
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="CitizenEmail"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={loginForm.citizenEmail}
-              onChangeText={(text) => updateLoginField('citizenEmail', text)}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="CitizenPassword"
-              secureTextEntry
-              value={loginForm.citizenPassword}
-              onChangeText={(text) => updateLoginField('citizenPassword', text)}
-            />
+            <View style={styles.loginCard}>
+             
+             
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={loading || isLoginLocked}
-            >
-              {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Login</Text>}
-            </TouchableOpacity>
+              {isLoginLocked ? (
+                <View style={styles.lockNotice}>
+                  <Ionicons name="lock-closed-outline" size={18} color="#b91c1c" />
+                  <Text style={styles.lockText}>
+                    Login locked. Try again in {lockSecondsRemaining} seconds.
+                  </Text>
+                </View>
+              ) : null}
 
-            <TouchableOpacity onPress={() => setShowRegistration(true)} style={styles.switchLinkWrap}>
-              <Text style={styles.switchLink}>Don't have an account? Go to registration</Text>
-            </TouchableOpacity>
+              <Text style={styles.loginFieldLabel}>Email address</Text>
+              <View style={styles.loginInputWrap}>
+                <Ionicons name="mail-outline" size={19} color="#64748b" />
+                <TextInput
+                  style={styles.loginInput}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#94a3b8"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={loginForm.citizenEmail}
+                  onChangeText={(text) => updateLoginField('citizenEmail', text)}
+                />
+              </View>
+
+              <Text style={styles.loginFieldLabel}>Password</Text>
+              <View style={styles.loginInputWrap}>
+                <Ionicons name="lock-closed-outline" size={19} color="#64748b" />
+                <TextInput
+                  style={styles.loginInput}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#94a3b8"
+                  secureTextEntry
+                  value={loginForm.citizenPassword}
+                  onChangeText={(text) => updateLoginField('citizenPassword', text)}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.loginButton, (loading || isLoginLocked) && styles.buttonDisabled]}
+                onPress={handleLogin}
+                disabled={loading || isLoginLocked}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <>
+                    <Text style={styles.loginButtonText}>Sign In</Text>
+                   
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.registerPrompt}>
+              <Text style={styles.registerPromptText}>Don't have an account?</Text>
+              <TouchableOpacity onPress={() => setShowRegistration(true)}>
+                <Text style={styles.registerPromptLink}>Create an account</Text>
+              </TouchableOpacity>
+            </View>
           </>
         )}
       </ScrollView>
@@ -482,14 +519,17 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0f172a',
-    marginBottom: 8,
+    marginBottom: 20,
+    alignSelf: 'center',
+    
   },
   subtitle: {
     fontSize: 14,
     color: '#475569',
     marginBottom: 20,
+    alignSelf: 'center',
   },
   input: {
     borderWidth: 1,
@@ -516,7 +556,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#ffffff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   switchLinkWrap: {
     marginTop: 16,
@@ -525,12 +565,123 @@ const styles = StyleSheet.create({
   switchLink: {
     color: '#1E3A8A',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   lockText: {
     color: '#b91c1c',
     fontSize: 14,
-    marginBottom: 12,
+    flex: 1,
     fontWeight: '600',
+  },
+  loginHero: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  loginLogo: {
+    width: 150,
+    height: 92,
+    marginBottom: 8,
+  },
+  loginWelcome: {
+    color: '#0f172a',
+    fontSize: 29,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  loginSubtitle: {
+    color: '#64748b',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  loginCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 3,
+  },
+  loginCardTitle: {
+    color: '#1e3a8a',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 5,
+  },
+  loginCardSubtitle: {
+    color: '#64748b',
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  lockNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fef2f2',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    borderRadius: 10,
+    padding: 11,
+    marginBottom: 16,
+  },
+  loginFieldLabel: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 7,
+  },
+  loginInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 11,
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 13,
+    marginBottom: 16,
+  },
+  loginInput: {
+    flex: 1,
+    minHeight: 48,
+    paddingVertical: 11,
+    fontSize: 15,
+    color: '#0f172a',
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    minHeight: 50,
+    borderRadius: 11,
+    backgroundColor: '#1e3a8a',
+    marginTop: 4,
+  },
+  loginButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  registerPrompt: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 22,
+  },
+  registerPromptText: {
+    color: '#64748b',
+    fontSize: 13,
+  },
+  registerPromptLink: {
+    color: '#1E3A8A',
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

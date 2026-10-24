@@ -239,7 +239,7 @@ export default function NonAnonymousComplaintSubmission({ citizen, onBack }) {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: [ImagePicker.MediaType.Images, ImagePicker.MediaType.Videos],
+        mediaTypes: ['images', 'videos'],
         allowsEditing: false,
         allowsMultipleSelection: true,
         quality: 0.8,
@@ -269,16 +269,15 @@ export default function NonAnonymousComplaintSubmission({ citizen, onBack }) {
         const extension = (asset.fileName || asset.uri || '').split('.').pop() || 'jpg';
         const safeExtension = extension.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
         const fileName = `complaint_${Date.now()}_${index}.${safeExtension}`;
-        const contentType = asset.mimeType || (safeExtension === 'mp4' ? 'video/mp4' : 'image/jpeg');
-
+        const assetResponse = await fetch(asset.uri);
+        if (!assetResponse.ok) {
+          throw new Error('Unable to read the selected evidence file.');
+        }
+        const assetBlob = await assetResponse.blob();
         const formData = new FormData();
         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
         formData.append('folder', `complaints/${citizenId}`);
-        formData.append('file', {
-          uri: asset.uri,
-          type: contentType,
-          name: fileName,
-        });
+        formData.append('file', assetBlob, fileName);
 
         const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`, {
           method: 'POST',
@@ -417,7 +416,7 @@ export default function NonAnonymousComplaintSubmission({ citizen, onBack }) {
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Text style={styles.heading}>Non-Anonymous Complaint Submission</Text>
-      <Text style={styles.subtitle}>Your registered details will be included with the complaint.</Text>
+      
 
       <View style={styles.profileCard}>
         <Text style={styles.label}>Citizen</Text>

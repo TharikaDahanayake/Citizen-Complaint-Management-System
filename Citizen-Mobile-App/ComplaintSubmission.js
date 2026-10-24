@@ -4,7 +4,7 @@ export default function ComplaintSubmission({ onAnonymousPress, onNonAnonymousPr
   return (
     <View style={styles.page}>
       <Text style={styles.heading}>Complaint Submission</Text>
-      <Text style={styles.subtitle}>Choose how you want to submit your complaint.</Text>
+      
 
       <TouchableOpacity style={styles.button} onPress={onAnonymousPress} activeOpacity={0.8}>
         <Text style={styles.buttonText}>Anonymous Complaint Submission</Text>
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#0f172a',
-    marginBottom: 8,
+    marginBottom: 20,
   },
   subtitle: {
     fontSize: 15,

@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   topTab: {
     backgroundColor: '#1E3A8A',
     paddingHorizontal: 20,
-    paddingVertical: 25,
+    paddingVertical: 30,
   },
   topTabText: {
     color: '#ffffff',

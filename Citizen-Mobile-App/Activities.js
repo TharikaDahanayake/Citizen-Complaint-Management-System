@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { generateAnonOwnerHash } from './anonTracking';
 import { db } from './firebaseConfig';
@@ -324,65 +325,107 @@ export default function Activities({ citizen }) {
       <Text style={styles.heading}>Activities</Text>
 
       {selectedComplaint ? (
-        <View style={styles.detailPageCard}>
-          <Text style={styles.detailPageTitle}>{selectedComplaint.title}</Text>
-          <Text style={styles.detailPageSubtitle}>{activeTab} Complaint Details</Text>
+        <View style={styles.detailPage}>
+          <Pressable style={styles.backButton} onPress={closeComplaintDetails}>
+            <Ionicons name="arrow-back" size={18} color="#1d4ed8" />
+            <Text style={styles.backButtonText}>Back to Activities</Text>
+          </Pressable>
 
-          <View style={styles.trackIdBadge}>
-            <Text style={styles.trackIdBadgeText}>Track ID: {selectedComplaint.trackID}</Text>
+          <View style={styles.detailHeaderCard}>
+            
+            <Text style={styles.detailPageTitle}>{selectedComplaint.title}</Text>
+            <View style={styles.headerMetaRow}>
+              <View style={styles.trackIdBadge}>
+                <Text style={styles.trackIdBadgeText}>Track ID: {selectedComplaint.trackID}</Text>
+              </View>
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryBadgeText}>{selectedComplaint.complaintCategory}</Text>
+              </View>
+            </View>
           </View>
 
-          <View style={styles.badgeRow}>
-            <View style={styles.primaryBadge}>
-              <Text style={styles.primaryBadgeText}>Status: {selectedComplaint.status}</Text>
+          <View style={styles.detailSectionCard}>
+            <View style={styles.detailSectionHeading}>
+              <View style={styles.sectionIcon}><Ionicons name="document-text-outline" size={19} color="#1d4ed8" /></View>
+              <View>
+                <Text style={styles.detailSectionTitle}>Complaint </Text>
+                
+              </View>
             </View>
-            <View style={styles.secondaryBadge}>
-              <Text style={styles.secondaryBadgeText}>{selectedComplaint.complaintCategory}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.sectionTitleText}>Description</Text>
-          <View style={styles.descriptionBox}>
             <Text style={styles.descriptionText}>{selectedComplaint.description}</Text>
+            <View style={styles.locationRow}>
+              <View style={styles.locationIcon}><Ionicons name="location-outline" size={19} color="#1d4ed8" /></View>
+              {selectedComplaint.locationUrl ? (
+                <Pressable style={styles.mapButton} onPress={() => openExternalLink(selectedComplaint.locationUrl)}>
+                  <Text style={styles.mapButtonText}>View on Map</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
 
-          <Text style={styles.sectionTitleText}>Location</Text>
-          {selectedComplaint.locationUrl ? (
-            <Pressable style={styles.actionLink} onPress={() => openExternalLink(selectedComplaint.locationUrl)}>
-              <Text style={styles.actionLinkText}>Show location</Text>
-            </Pressable>
-          ) : (
-            <Text style={styles.emptyText}>N/A</Text>
-          )}
+          <View style={styles.detailSectionCard}>
+            <View style={styles.detailSectionHeading}>
+              <View style={styles.sectionIcon}><Ionicons name="shield-checkmark-outline" size={19} color="#1d4ed8" /></View>
+              <View>
+                <Text style={styles.detailSectionTitle}>Complaint Assignment</Text>
+                
+              </View>
+            </View>
+            <View style={styles.assignmentGrid}>
+              <DetailRow label="Police station" value={selectedComplaint.stationName} />
+              <DetailRow label="Department" value={selectedComplaint.department} />
+              <DetailRow label="Officer name" value={selectedComplaint.officerName} />
+              <DetailRow label="Contact no" value={selectedComplaint.officerContact} />
+            </View>
+          </View>
 
-          <Text style={styles.sectionTitleText}>Evidence</Text>
-          {selectedComplaint.evidenceUrls.length > 0 ? (
-            selectedComplaint.evidenceUrls.map((url, index) => (
-              <Pressable
-                key={`${selectedComplaint.id}-evidence-${index}`}
-                style={styles.actionLink}
-                onPress={() => openExternalLink(url)}
-              >
-                <Text style={styles.actionLinkText}>Open Evidence {index + 1}</Text>
-              </Pressable>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No evidence links</Text>
-          )}
+          <View style={styles.detailSectionCard}>
+            <View style={styles.detailSectionHeading}>
+              <View style={styles.sectionIcon}><Ionicons name="checkmark-circle-outline" size={19} color="#15803d" /></View>
+              <View>
+                <Text style={styles.detailSectionTitle}>Resolution</Text>
+                
+              </View>
+            </View>
+            <View style={styles.resolutionBox}>
+              <Text style={styles.resolutionText}>{selectedComplaint.comment || 'No resolution or action has been recorded yet.'}</Text>
+            </View>
+          </View>
 
-          <Text style={styles.sectionTitleText}>Assignment</Text>
-          <DetailRow label="Station Name" value={selectedComplaint.stationName} />
-          <DetailRow label="Department" value={selectedComplaint.department} />
-          <DetailRow label="Officer Name" value={selectedComplaint.officerName} />
-          <DetailRow label="Officer Contact" value={selectedComplaint.officerContact} />
-          {activeTab === 'Resolved' ? (
-            <DetailRow label="Solution" value={selectedComplaint.comment || 'N/A'} />
-          ) : null}
+          <View style={styles.detailSectionCard}>
+            <View style={styles.detailSectionHeading}>
+              <View style={styles.sectionIcon}><Ionicons name="attach-outline" size={20} color="#1d4ed8" /></View>
+              <View>
+                <Text style={styles.detailSectionTitle}>Evidence & Attachments</Text>
+                
+              </View>
+            </View>
+            {selectedComplaint.evidenceUrls.length > 0 ? (
+              selectedComplaint.evidenceUrls.map((url, index) => (
+                <Pressable
+                  key={`${selectedComplaint.id}-evidence-${index}`}
+                  style={styles.evidenceLink}
+                  onPress={() => openExternalLink(url)}
+                >
+                  <Ionicons name="document-attach-outline" size={18} color="#1d4ed8" />
+                  <Text style={styles.evidenceLinkText}>Open attachment {index + 1}</Text>
+                  <Ionicons name="open-outline" size={16} color="#64748b" />
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No evidence attached.</Text>
+            )}
+          </View>
 
           {normalizeStatus(selectedComplaint.status) === 'resolved' ? (
             <View style={styles.feedbackSection}>
-              <Text style={styles.feedbackLabel}>Feedback</Text>
-
+              <View style={styles.detailSectionHeading}>
+                <View style={styles.sectionIcon}><Ionicons name="chatbubble-ellipses-outline" size={19} color="#1d4ed8" /></View>
+                <View>
+                  <Text style={styles.detailSectionTitle}>Feedback</Text>
+                  
+                </View>
+              </View>
               {selectedComplaint.feedback ? (
                 <View style={styles.feedbackSavedBox}>
                   <Text style={styles.feedbackSavedText}>{selectedComplaint.feedback}</Text>
@@ -393,31 +436,26 @@ export default function Activities({ citizen }) {
                     style={styles.feedbackInput}
                     value={feedbackText}
                     onChangeText={setFeedbackText}
-                    placeholder="Enter your feedback here"
+                    placeholder="Share your feedback about the resolution"
                     placeholderTextColor="#94a3b8"
                     multiline
                     textAlignVertical="top"
                   />
-
                   <Pressable
                     style={[styles.feedbackButton, savingFeedback && styles.feedbackButtonDisabled]}
                     onPress={submitFeedback}
                     disabled={savingFeedback}
                   >
+                    <Ionicons name="send-outline" size={17} color="#ffffff" />
                     <Text style={styles.feedbackButtonText}>
-                      {savingFeedback ? 'Saving...' : 'Give Feedback'}
+                      {savingFeedback ? 'Saving...' : 'Submit Feedback'}
                     </Text>
                   </Pressable>
                 </>
               )}
-
               {feedbackNotice ? <Text style={styles.feedbackSuccessText}>{feedbackNotice}</Text> : null}
             </View>
           ) : null}
-
-          <Pressable style={styles.backButton} onPress={closeComplaintDetails}>
-            <Text style={styles.backButtonText}>Back</Text>
-          </Pressable>
         </View>
       ) : null}
 
@@ -442,7 +480,7 @@ export default function Activities({ citizen }) {
             <View style={styles.subPageHeader}>
               <View>
                 <Text style={styles.subPageTitle}>{activeTab} Complaints</Text>
-                <Text style={styles.subPageSubtitle}>Tap Details to open a full complaint page.</Text>
+                
               </View>
             </View>
 
@@ -557,24 +595,93 @@ const styles = StyleSheet.create({
     borderColor: '#dbeafe',
     marginBottom: 14,
   },
+  detailPage: {
+    gap: 12,
+    paddingBottom: 12,
+  },
+  detailHeaderCard: {
+    backgroundColor: '#1e3a8a',
+    borderRadius: 18,
+    padding: 20,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  detailEyebrow: {
+    color: '#bfdbfe',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 7,
+  },
+  headerMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  detailSectionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 16,
+    shadowColor: '#0f172a',
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  detailSectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 10,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eff6ff',
+  },
+  detailSectionTitle: {
+    color: '#0f172a',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  detailSectionSubtitle: {
+    color: '#64748b',
+    fontSize: 12,
+    marginTop: 2,
+  },
   backButton: {
     alignSelf: 'flex-start',
-    backgroundColor: '#1E3A8A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
     borderRadius: 10,
     paddingHorizontal: 15,
     paddingVertical: 10,
-    marginBottom: 12,
   },
   backButtonText: {
-    color: '#ffffff',
+    color: '#1d4ed8',
     fontSize: 14,
     fontWeight: '700',
   },
   detailPageTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
-    color: '#0f172a',
+    color: '#ffffff',
     marginBottom: 4,
+    lineHeight: 31,
   },
   detailPageSubtitle: {
     fontSize: 13,
@@ -582,7 +689,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   feedbackSection: {
-    marginTop: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 16,
   },
   feedbackLabel: {
     fontSize: 13,
@@ -603,7 +714,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   feedbackButton: {
-    alignSelf: 'flex-start',
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: '#1E3A8A',
     borderRadius: 10,
     paddingHorizontal: 14,
@@ -637,6 +752,107 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#15803d',
+  },
+  categoryBadge: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  categoryBadgeText: {
+    color: '#92400e',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: '#ffffff',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    marginTop: 12,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#16a34a',
+  },
+  statusBadgeText: {
+    color: '#1e3a8a',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+    marginTop: 16,
+    paddingTop: 14,
+  },
+  locationIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eff6ff',
+  },
+  locationTextWrap: {
+    flex: 1,
+  },
+  mapButton: {
+    marginLeft: 'auto',
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  mapButtonText: {
+    color: '#1d4ed8',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  assignmentGrid: {
+    gap: 12,
+  },
+  resolutionBox: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    padding: 13,
+  },
+  resolutionText: {
+    color: '#166534',
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  evidenceLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    backgroundColor: '#eff6ff',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    marginBottom: 8,
+  },
+  evidenceLinkText: {
+    flex: 1,
+    color: '#1d4ed8',
+    fontSize: 13,
+    fontWeight: '700',
   },
   complaintBox: {
     borderWidth: 1,
@@ -756,17 +972,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   detailRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 6,
   },
   detailLabel: {
+    width: 112,
     fontSize: 12,
     fontWeight: '700',
     color: '#64748b',
   },
   detailValue: {
+    flex: 1,
     fontSize: 14,
     color: '#0f172a',
-    marginTop: 2,
+    lineHeight: 18,
   },
   complaintFooter: {
     flexDirection: 'row',

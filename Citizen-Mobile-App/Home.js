@@ -132,7 +132,6 @@ export default function Home({ citizen, onNewComplaintPress }) {
       { key: 'total', label: 'Total Complaints', value: summaryCounts.total },
       { key: 'pending', label: 'Pending', value: summaryCounts.pending },
       { key: 'in-review', label: 'In Review', value: summaryCounts.inReview },
-      { key: 'escalated', label: 'Escalated', value: summaryCounts.escalated },
       { key: 'resolved', label: 'Resolved', value: summaryCounts.resolved },
     ],
     [summaryCounts]
@@ -164,10 +163,7 @@ export default function Home({ citizen, onNewComplaintPress }) {
 
   return (
     <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
-      <View style={styles.section}>
-        <Text style={styles.metaText}>Today: {formattedDateTime}</Text>
-        <Text style={styles.metaText}>Last login: {lastLoginNote}</Text>
-      </View>
+      
 
       <View style={styles.section}>
         <View style={styles.quickActionsGrid}>
@@ -192,7 +188,7 @@ export default function Home({ citizen, onNewComplaintPress }) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Complaint Status Summary</Text>
+        <Text style={styles.sectionTitle}>Complaint Overview</Text>
         <View style={styles.statusGrid}>
           {statusSummary.map((status) => (
             <View key={status.key} style={styles.statusCard}>
@@ -204,7 +200,7 @@ export default function Home({ citizen, onNewComplaintPress }) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Advertisements</Text>
+        
         <View style={styles.adCard}>
           <ScrollView
             ref={adScrollRef}
@@ -336,7 +332,7 @@ const styles = StyleSheet.create({
   },
   adImage: {
     width: '100%',
-    height: 180,
+    height: 230,
   },
   adDotsRow: {
     flexDirection: 'row',
